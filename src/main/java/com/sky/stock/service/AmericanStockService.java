@@ -11,10 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Service
 public class AmericanStockService {
@@ -30,42 +29,50 @@ public class AmericanStockService {
 
     public void run() {
         SinaRequestParam sinaRequestParam = new SinaRequestParam();
-
-        JSONObject jsonObject = JSON.parseObject(JSON.toJSONString(sinaRequestParam));
-        Map<String, Object> paramMap = jsonObject;
+        Map<String, Object> paramMap = objectToMap(sinaRequestParam);
         String url = RequestUtils.spliceUrl(sinaSource, paramMap);
         String result = HttpUtil.createPost(url).execute().body();
-
-
-
-    }
-
-    private void parseData(String responseData) {
-        int jsonValueStart = responseData.indexOf(flagStr) + flagStr.length() + 1;
-        String jsonValue = responseData.substring(jsonValueStart, responseData.length() - 2);
-        String count = JSON.parseObject(jsonValue).getString("count");
-
+        result = parseDataToJsonString(result);
+        String count = JSON.parseObject(result).getString("count");
         int total = Integer.parseInt(count);
         int loops = total % 60 == 0 ? total / 60 : total / 60 + 1;
-
         handleData(loops);
     }
 
-    private void handleData(int loops){
-        List<CompletableFuture<Integer>> list = new ArrayList<>();
+    private void handleData(int loops) {
+        String americanDate = getAmericanDate();
         for (int i = 1; i <= loops; i++) {
             int finalI = i;
-            CompletableFuture<Integer> data = CompletableFuture.supplyAsync(() -> {
-                String body = HttpUtil.createPost(String.format(url, finalI)).execute().body();
-                int start = body.indexOf(flagStr) + flagStr.length() + 1;
-                String value = body.substring(start, body.length() - 2);
-                List<AmericanStockInfo> americanStockInfos = JSON.parseArray(JSON.parseObject(value).getString("data"), AmericanStockInfo.class);
+            executor.execute(() -> {
+                Map<String, Object> paramMap = objectToMap(new SinaRequestParam(finalI));
+                String url = RequestUtils.spliceUrl(sinaSource, paramMap);
+                String result = HttpUtil.createPost(url).execute().body();
+                result = parseDataToJsonString(result);
+                List<AmericanStockInfo> americanStockInfos = JSON.parseArray(JSON.parseObject(result).getString("data"), AmericanStockInfo.class);
+                americanStockInfos.forEach(americanStockInfo -> americanStockInfo.setDetailDate(americanDate));
                 repository.saveAll(americanStockInfos);
-                return finalI;
             });
-            list.add(data);
-
         }
-
     }
+
+    private Map<String, Object> objectToMap(SinaRequestParam sinaRequestParam) {
+        JSONObject jsonObject = JSON.parseObject(JSON.toJSONString(sinaRequestParam));
+        Map<String, Object> paramMap = (Map<String, Object>) jsonObject;
+        return paramMap;
+    }
+
+    private String parseDataToJsonString(String responseData) {
+        int jsonValueStart = responseData.indexOf(flagStr) + flagStr.length() + 1;
+        String jsonValue = responseData.substring(jsonValueStart, responseData.length() - 2);
+        return jsonValue;
+    }
+
+    private String getAmericanDate() {
+        TimeZone time1 = TimeZone.getTimeZone("US/Eastern");
+        Date today1 = Calendar.getInstance(time1, Locale.US).getTime();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        return simpleDateFormat.format(today1);
+    }
+
+
 }

@@ -1,8 +1,10 @@
 package com.sky.stock.param;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class SinaRequestParam {
 
     /*
@@ -22,4 +24,7 @@ public class SinaRequestParam {
 
     private String id;
 
+    public SinaRequestParam(int page) {
+        this.page = page;
+    }
 }
