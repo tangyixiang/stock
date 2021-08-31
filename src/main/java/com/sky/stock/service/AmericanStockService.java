@@ -4,10 +4,14 @@ import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.sky.stock.entity.AmericanStockInfo;
+import com.sky.stock.event.AmericanStockEvent;
 import com.sky.stock.param.SinaRequestParam;
 import com.sky.stock.repository.AmericanStockRepository;
+import com.sky.stock.util.LocalDateUtil;
 import com.sky.stock.util.RequestUtils;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
@@ -16,16 +20,18 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Service
+@AllArgsConstructor
 public class AmericanStockService {
 
     private String sinaSource = "https://stock.finance.sina.com.cn/usstock/api/jsonp.php/IO.XSRV2.CallbackList['fa8Vo3U4TzVRdsLs']/US_CategoryService.getList";
 
     private String flagStr = "IO.XSRV2.CallbackList['fa8Vo3U4TzVRdsLs']";
 
-    @Autowired
     private ThreadPoolTaskExecutor executor;
-    @Autowired
+
     private AmericanStockRepository repository;
+
+    private ApplicationEventPublisher publisher;
 
     public void run() {
         SinaRequestParam sinaRequestParam = new SinaRequestParam();
@@ -40,7 +46,7 @@ public class AmericanStockService {
     }
 
     private void handleData(int loops) {
-        String americanDate = getAmericanDate();
+        String americanDate = LocalDateUtil.getAmericanDate();
         for (int i = 1; i <= loops; i++) {
             int finalI = i;
             executor.execute(() -> {
@@ -50,6 +56,7 @@ public class AmericanStockService {
                 result = parseDataToJsonString(result);
                 List<AmericanStockInfo> americanStockInfos = JSON.parseArray(JSON.parseObject(result).getString("data"), AmericanStockInfo.class);
                 americanStockInfos.forEach(americanStockInfo -> americanStockInfo.setDetailDate(americanDate));
+                publisher.publishEvent(new AmericanStockEvent(this, americanStockInfos));
                 repository.saveAll(americanStockInfos);
             });
         }
@@ -66,13 +73,5 @@ public class AmericanStockService {
         String jsonValue = responseData.substring(jsonValueStart, responseData.length() - 2);
         return jsonValue;
     }
-
-    private String getAmericanDate() {
-        TimeZone time1 = TimeZone.getTimeZone("US/Eastern");
-        Date today1 = Calendar.getInstance(time1, Locale.US).getTime();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        return simpleDateFormat.format(today1);
-    }
-
 
 }
