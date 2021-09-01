@@ -3,6 +3,7 @@ package com.sky.stock.service;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.sky.stock.bean.AmericanStockInfoBean;
 import com.sky.stock.entity.AmericanStockInfo;
 import com.sky.stock.event.AmericanStockEvent;
 import com.sky.stock.param.SinaRequestParam;
@@ -29,7 +30,7 @@ public class AmericanStockService {
 
     private ThreadPoolTaskExecutor executor;
 
-    private AmericanStockRepository repository;
+//    private AmericanStockRepository repository;
 
     private ApplicationEventPublisher publisher;
 
@@ -46,7 +47,6 @@ public class AmericanStockService {
     }
 
     private void handleData(int loops) {
-        String americanDate = LocalDateUtil.getAmericanDate();
         for (int i = 1; i <= loops; i++) {
             int finalI = i;
             executor.execute(() -> {
@@ -54,10 +54,10 @@ public class AmericanStockService {
                 String url = RequestUtils.spliceUrl(sinaSource, paramMap);
                 String result = HttpUtil.createPost(url).execute().body();
                 result = parseDataToJsonString(result);
-                List<AmericanStockInfo> americanStockInfos = JSON.parseArray(JSON.parseObject(result).getString("data"), AmericanStockInfo.class);
-                americanStockInfos.forEach(americanStockInfo -> americanStockInfo.setDetailDate(americanDate));
+                List<AmericanStockInfoBean> americanStockInfos = JSON.parseArray(JSON.parseObject(result).getString("data"), AmericanStockInfoBean.class);
+
                 publisher.publishEvent(new AmericanStockEvent(this, americanStockInfos));
-                repository.saveAll(americanStockInfos);
+//                repository.saveAll(americanStockInfos);
             });
         }
     }

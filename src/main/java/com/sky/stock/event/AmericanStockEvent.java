@@ -1,5 +1,6 @@
 package com.sky.stock.event;
 
+import com.sky.stock.bean.AmericanStockInfoBean;
 import com.sky.stock.entity.AmericanStockInfo;
 import org.springframework.context.ApplicationEvent;
 
@@ -7,18 +8,18 @@ import java.util.List;
 
 public class AmericanStockEvent extends ApplicationEvent {
 
-    private List<AmericanStockInfo> americanStockInfos;
+    private List<AmericanStockInfoBean> americanStockInfoBeans;
 
     public AmericanStockEvent(Object source) {
         super(source);
     }
 
-    public AmericanStockEvent(Object source, List<AmericanStockInfo> americanStockInfos) {
+    public AmericanStockEvent(Object source, List<AmericanStockInfoBean> americanStockInfoBeans) {
         super(source);
-        this.americanStockInfos = americanStockInfos;
+        this.americanStockInfoBeans = americanStockInfoBeans;
     }
 
-    public List<AmericanStockInfo> getAmericanStockInfos() {
-        return americanStockInfos;
+    public List<AmericanStockInfoBean> getAmericanStockInfoBeans() {
+        return americanStockInfoBeans;
     }
 }

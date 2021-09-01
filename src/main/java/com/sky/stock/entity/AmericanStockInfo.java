@@ -12,32 +12,44 @@ import java.time.LocalDateTime;
 @Entity(name = "american_stock")
 public class AmericanStockInfo {
 
-
     @Id
     private String id;
-    private String name;
-    private String cname;
-    private String category;
+    // 代码
     private String symbol;
-    private String price;
-    private String diff;
-    private String chg;
-    private String preclose;
-    private String open;
-    private String high;
-    private String low;
+    // 名称
+    private String name;
+    // 中文名称
+    private String cname;
+    // 分类
+    private String category;
+    // 价格
+    private double price;
+    // 高低位差值
+    private double diff;
+    // 涨跌额
+    private double chg;
+    // 昨收
+    private double preclose;
+    // 今开
+    private double open;
+    // 高位
+    private double high;
+    // 低位
+    private double low;
+    // 振幅
     private String amplitude;
+    // 成交量
     private String volume;
+    // 市值
     private long mktcap;
+    // PE
     private String pe;
+    // 市场类型
     private String market;
-    private String category_id;
+    // 分类ID
+    private Integer category_id;
+    // 日期
     private String detailDate;
     private LocalDateTime createTime = LocalDateTime.now();
-
-
-    public AmericanStockInfo() {
-        this.id = IdUtils.getId();
-    }
 
 }
